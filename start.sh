@@ -1,0 +1,1 @@
+deno run --allow-net="0.0.0.0:3006" --allow-read="./public/index.html" src/index.ts

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chategy</title>
+
+    <style>
+        #log {
+            border-width: 2px;
+            border-color: black;
+            border-style: solid;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="log"></div><br>
+    <input type="text" id="message-input" placeholder="Message"> <button id="send-message">Send</button>
+    <script>
+        // --- Helper functions ---
+        /**
+         * @param {number} timestamp
+         * @returns {string}
+         */
+        const parseTime = (timestamp) => {
+            const date = new Date(timestamp);
+            return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+        };
+
+        // --- Variables ---
+        const logDiv = document.querySelector(`#log`);
+        const messageInput = document.querySelector(`#message-input`);
+        const sendMessageButton = document.querySelector(`#send-message`);
+        const socket = new WebSocket(`ws://${window.location.host}/websocket`);
+
+        // --- Event listeners ---
+        socket.onmessage = (event) => {
+            /** @type {string} */
+            const [timestamp, message] = event.data.split(`,`);
+            logDiv.innerHTML += `<p>${parseTime(Number(timestamp))} - ${message}</p>`;
+        };
+
+        sendMessageButton.addEventListener(`click`, () => {
+            const message = messageInput.value;
+            if (message.length === 0) {
+                return;
+            }
+            socket.send(message);
+            messageInput.value = ``;
+            logDiv.innerHTML += `<p>${parseTime(Date.now())} - You: ${message}</p>`;
+        });
+    </script>
+</body>
+
+</html>
