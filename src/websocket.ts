@@ -34,29 +34,6 @@ export const handleWebSocket = (socket: WebSocket) => {
             // Send the JWT back to the client
             socket.send(message);
 
-            // Listen for messages from the socket
-            socket.onmessage = async (event) => {
-                // Parse the message from the event
-                const messageArray = (event.data as string).trim();
-                const [JWT, message] = messageArray.split(`\0`);
-
-                // Verify the JWT
-                const [validJWT, JWTdata] = await verifyJWT(JWT);
-                if (!validJWT) {
-                    socket.close(666, `Invalid JWT`);
-                    return;
-                } else {
-                    // Send the message to the other clients
-                    for (let i = 0; i < window.connections.length; i++) {
-                        if (window.connections[i].socket !== socket) {
-                            window.connections[i].socket.send(
-                                `${event.timeStamp}\0${JWTdata?.payload.username}: ${message}`,
-                            );
-                        }
-                    }
-                }
-            };
-
             // Remove the socket from the connections array when it closes
             socket.onclose = () => {
                 window.connections.splice(
@@ -88,6 +65,7 @@ export const handleWebSocket = (socket: WebSocket) => {
                 return;
             }
 
+            // Create the JWT
             const JWT = await createJWT({ username: message });
 
             // Register the username and socket
@@ -99,29 +77,6 @@ export const handleWebSocket = (socket: WebSocket) => {
 
             // Send the JWT to the client
             socket.send(JWT);
-
-            // Listen for messages from the socket
-            socket.onmessage = async (event) => {
-                // Parse the message from the event
-                const messageArray = (event.data as string).trim();
-                const [JWT, message] = messageArray.split(`\0`);
-
-                // Verify the JWT
-                const [validJWT, JWTdata] = await verifyJWT(JWT);
-                if (!validJWT) {
-                    socket.close(666, `Invalid JWT`);
-                    return;
-                } else {
-                    // Send the message to the other clients
-                    for (let i = 0; i < window.connections.length; i++) {
-                        if (window.connections[i].socket !== socket) {
-                            window.connections[i].socket.send(
-                                `${event.timeStamp}\0${JWTdata?.payload.username}: ${message}`,
-                            );
-                        }
-                    }
-                }
-            };
 
             // Remove the socket from the connections array when it closes
             socket.onclose = () => {
@@ -135,5 +90,28 @@ export const handleWebSocket = (socket: WebSocket) => {
                 );
             };
         }
+
+        // Listen for messages from the socket
+        socket.onmessage = async (event) => {
+            // Parse the message from the event
+            const messageArray = (event.data as string).trim();
+            const [JWT, message] = messageArray.split(`\0`);
+
+            // Verify the JWT
+            const [validJWT, JWTdata] = await verifyJWT(JWT);
+            if (!validJWT) {
+                socket.close(666, `Invalid JWT`);
+                return;
+            } else {
+                // Send the message to the other clients
+                for (let i = 0; i < window.connections.length; i++) {
+                    if (window.connections[i].socket !== socket) {
+                        window.connections[i].socket.send(
+                            `${event.timeStamp}\0${JWTdata?.payload.username}: ${message}`,
+                        );
+                    }
+                }
+            }
+        };
     };
 };

@@ -13,21 +13,19 @@ window.JWT_SECRET = (await jose.generateSecret(`HS256`)) as jose.KeyLike;
 
 export const createJWT = (
     payload: { [property: string]: unknown },
-    expirationTime = 60,
-) => {
-    return new jose.SignJWT(payload)
+    expirationTime = 259200, // Valid for 3 days
+) =>
+    new jose.SignJWT(payload)
         .setProtectedHeader({ alg: `HS256`, typ: `JWT` })
         .setIssuedAt()
-        .setExpirationTime(Math.floor(new Date().getTime() / 1000) + expirationTime)
+        .setExpirationTime(Math.floor(Date.now() / 1000) + expirationTime)
         .sign(window.JWT_SECRET);
-};
 
 export const verifyJWT = (
     token: string,
-): Promise<[boolean, jose.JWTVerifyResult | null]> => {
-    return new Promise((resolve) => {
+): Promise<[boolean, jose.JWTVerifyResult | null]> =>
+    new Promise((resolve) => {
         jose.jwtVerify(token, window.JWT_SECRET)
             .then((result) => resolve([true, result]))
             .catch(() => resolve([false, null]));
     });
-};

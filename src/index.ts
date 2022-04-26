@@ -16,37 +16,37 @@ serve(
             });
         } else if (path === `/websocket`) {
             if (request.headers.get(`upgrade`) === `websocket`) {
-                const { socket, response } = Deno.upgradeWebSocket(request);
+                const { socket, response } = Deno.upgradeWebSocket(request, {
+                    idleTimeout: 5,
+                });
                 handleWebSocket(socket);
                 return response;
-            } else {
-                return new Response(
-                    JSON.stringify({
-                        message: `Bad Request - Try sending a valid WebSocket request`,
-                        status: 400,
-                    }),
-                    {
-                        status: 400,
-                        headers: new Headers({
-                            "Content-Type": `application/json`,
-                        }),
-                    },
-                );
             }
-        } else {
             return new Response(
                 JSON.stringify({
-                    message: `Not Found - Only / contains HTML content`,
-                    status: 404,
+                    message: `Bad Request - Try sending a valid WebSocket request`,
+                    status: 400,
                 }),
                 {
-                    status: 404,
+                    status: 400,
                     headers: new Headers({
                         "Content-Type": `application/json`,
                     }),
                 },
             );
         }
+        return new Response(
+            JSON.stringify({
+                message: `Not Found - Only / contains HTML content`,
+                status: 404,
+            }),
+            {
+                status: 404,
+                headers: new Headers({
+                    "Content-Type": `application/json`,
+                }),
+            },
+        );
     },
     { port: 3006 },
 );
