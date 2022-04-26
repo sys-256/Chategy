@@ -8,51 +8,78 @@
     <title>Chategy</title>
 
     <style>
-        #log {
-            border-width: 2px;
-            border-color: black;
-            border-style: solid;
-            padding-left: 10px;
-        }
+
     </style>
 </head>
 
 <body>
-    <div id="log"></div><br>
-    <input type="text" id="message-input" placeholder="Message"> <button id="send-message">Send</button>
+    <div id="login">
+        <input type="text" id="username-input" placeholder="Username">
+        <button id="submit-username">Submit</button>
+    </div>
+    <div id="main" style="display: none;">
+        <input type="text" id="message-input" placeholder="Message">
+        <button id="send-message">Send</button>
+        <div id="log"></div>
+    </div>
     <script>
         // --- Helper functions ---
-        /**
-         * @param {number} timestamp
-         * @returns {string}
-         */
         const parseTime = (timestamp) => {
             const date = new Date(timestamp);
-            return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+            return date.toTimeString().substring(0, 8);
         };
 
-        // --- Variables ---
-        const logDiv = document.querySelector(`#log`);
+        // Variables
+        window.jwtToken = "";
+        //const socket = new WebSocket(`ws${window.location.protocol.includes(`s`) ? `s` : ``}://${window.location.host}/websocket`);
+        const socket = new WebSocket(`ws://192.168.2.12:3006/websocket`);
+        const usernameInput = document.querySelector(`#username-input`);
+        const submitUsernameButton = document.querySelector(`#submit-username`);
         const messageInput = document.querySelector(`#message-input`);
         const sendMessageButton = document.querySelector(`#send-message`);
-        const socket = new WebSocket(`ws://${window.location.host}/websocket`);
 
-        // --- Event listeners ---
-        socket.onmessage = (event) => {
-            /** @type {string} */
-            const [timestamp, message] = event.data.split(`,`);
-            logDiv.innerHTML += `<p>${parseTime(Number(timestamp))} - ${message}</p>`;
-        };
+        // Event listeners
+        submitUsernameButton.addEventListener(`click`, (event) => {
+            // Parse and validate username
+            const username = usernameInput.value;
+            if (username.length === 0) {
+                return;
+            }
+
+            // Send username to server
+            socket.send(username);
+
+            // Switch to the chat log
+            document.querySelector(`#login`).style.display = `none`;
+            document.querySelector(`#main`).style.display = `block`;
+            usernameInput.value = ``;
+        });
 
         sendMessageButton.addEventListener(`click`, () => {
+            // Parse and validate username
             const message = messageInput.value;
             if (message.length === 0) {
                 return;
             }
-            socket.send(message);
+            
+            // Send message to server
+            socket.send(`${window.jwtToken}\0${message}`);
             messageInput.value = ``;
-            logDiv.innerHTML += `<p>${parseTime(Date.now())} - You: ${message}</p>`;
+            document.querySelector(`#log`).innerHTML += `<p>${parseTime(Date.now())} - You: ${message}</p>`;
         });
+
+        socket.onmessage = (event) => {
+            window.jwtToken = event.data;
+
+            socket.onmessage = (event) => {
+                const [timestamp, message] = event.data.split(`\0`);
+                document.querySelector(`#log`).innerHTML += `<p>${parseTime(Number(timestamp))} - ${message}</p>`;
+            };
+        };
+
+        socket.onclose = (event) => {
+            alert(event.reason);
+        };
     </script>
 </body>
 
